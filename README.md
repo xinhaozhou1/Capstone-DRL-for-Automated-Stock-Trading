@@ -1,6 +1,6 @@
 # Capstone-DRL-for-Automated-Stock-Trading
 
-## Installation
+## Installation of the Old Dependencies
 ```shell
 git clone https://github.com/xinhaozhou1/Capstone-DRL-for-Automated-Stock-Trading.git
 ```
@@ -15,10 +15,10 @@ conda activate capstone
 ```
 
 Then cd into this repo, and install the dependencies in the requirements.txt.
-*Pay attention, this `requirements.txt` is different from that in the paper repo.*
+*Pay attention, this `old_requirements.txt` is different from that in the paper repo.*
 ```shell
 cd .../your/directory/Capstone-DRL-for-Automated-Stock-Trading
-pip install -r requirements.txt
+pip install -r old_requirements.txt
 ```
 
 Because we need to use GAIL, DDPG, TRPO, and PPO1 parallelize training, we need to install OpenMPI besides the `stable-baselines[mpi] ` package installed.
@@ -50,4 +50,13 @@ TURBULENCE_DATA = "data/dow30_turbulence_index.csv"
 ```
 
 #### 3. Any further questions
-Contact Xinhao Zhou for help!
+Contact Xinhao for help!
+
+## Installation of the New Dependencies
+Since the old dependencies are deprecated, in this new repo we use the following dependencies:
+```shell
+conda create -n capstone python=3.7
+conda activate capstone
+cd .../your/directory/Capstone-DRL-for-Automated-Stock-Trading
+pip install -r requirements.txt
+```
