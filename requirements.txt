@@ -2,3 +2,4 @@ numpy == 1.21.6
 pandas == 1.3.5
 stockstats == 0.5.4
 yfinance == 0.2.44
+matplotlib == 3.5.3

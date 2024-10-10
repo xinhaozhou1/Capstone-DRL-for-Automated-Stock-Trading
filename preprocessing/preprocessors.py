@@ -2,10 +2,12 @@ from unittest.mock import inplace
 
 import numpy as np
 import pandas as pd
+from pkg_resources import non_empty_lines
 from stockstats import StockDataFrame as Sdf
 from config import config
 import yfinance as yf
 import os
+import matplotlib.pyplot as plt
 
 def retrieve_DJ30_data():
     """
@@ -84,12 +86,66 @@ def add_technical_indicator(data: pd.DataFrame) -> pd.DataFrame:
 
 def add_turbulence(data: pd.DataFrame):
     """
-    add turbulence index from a precalcualted dataframe
+    add turbulence index for the dataframe
     :param data: (df) pandas dataframe
     :return: (df) pandas dataframe
     """
-    # TODO: Implement this function
-    return NotImplementedError
+    df = data.copy()
+    df_price_pivot = df.pivot(index='datadate', columns='tic', values='adjcp')
+    unique_date = df.datadate.unique()
+
+    # start after a year, take the first year as a historical data calculation base
+    start = 252
+    turbulence_index = [0] * start
+    # turbulence_index = [0]
+
+    count = 0
+    for i in range(start, len(unique_date)):
+        current_price = df_price_pivot[df_price_pivot.index == unique_date[i]]
+
+        # Expanding window to calculate the historical turbulence index
+        hist_price = df_price_pivot[[n in unique_date[0:i] for n in df_price_pivot.index]]
+        cov_temp = hist_price.cov()
+        current_temp = (current_price - np.mean(hist_price, axis=0))
+        temp = current_temp.values.dot(np.linalg.inv(cov_temp)).dot(current_temp.values.T)
+        if temp > 0:
+            count += 1
+            if count > 2:
+                turbulence_temp = temp[0][0]
+            else:
+                # avoid large outlier because of the calculation just begins
+                turbulence_temp = 0
+        else:
+            turbulence_temp = 0
+        turbulence_index.append(turbulence_temp)
+
+    turbulence_index = pd.DataFrame({'datadate': df_price_pivot.index,
+                                     'turbulence': turbulence_index})
+
+    df = df.merge(turbulence_index, on='datadate')
+    df = df.sort_values(['datadate', 'tic']).reset_index(drop=True)
+
+    return df
+
+def plot_turbulence_index(data):
+    '''
+    This function plot the turbulence index for validation
+    :param data: pandas dataframe
+    :return: None
+    '''
+    df = data.copy()
+    df = df.groupby('datadate').agg({'turbulence': 'first'}).reset_index()
+    df['datadate'] = pd.to_datetime(df['datadate'], format='%Y%m%d')
+    plt.figure(figsize=(10, 6))
+    plt.plot(df['datadate'], df['turbulence'], color='blue', label='Turbulence Index')
+
+    plt.title('Turbulence Index Over Time')
+    plt.xlabel('Date')
+    plt.ylabel('Turbulence Index')
+    plt.grid(True)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
 
 ## For testing purposes
 # if __name__ == "__main__":
