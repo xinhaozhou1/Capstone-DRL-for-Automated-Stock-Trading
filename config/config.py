@@ -16,3 +16,5 @@ dj_stock_ticker = ['AAPL', 'AXP', 'BA', 'CAT', 'CSCO', 'CVX',
                    'UNH', 'V', 'VZ', 'WBA', 'WMT', 'XOM']
 
 dj_data_path = os.path.join(project_root, "data", f"dow_30_{dj_start_date}_{dj_end_date}.csv")
+
+trained_model_dir = os.path.join(project_root, "model")
