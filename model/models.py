@@ -40,7 +40,7 @@ def DRL_validation(model, test_data, test_env, test_obs) -> None:
 
 def get_validation_sharpe(iteration):
     ###Calculate Sharpe ratio based on validation results###
-    df_total_value = pd.read_csv('results/account_value_validation_{}.csv'.format(iteration), index_col=0)
+    df_total_value = pd.read_csv(f"{config.results_dir}/account_value_validation_{iteration}.csv", index_col=0)
     df_total_value.columns = ['account_value_train']
     df_total_value['daily_return'] = df_total_value.pct_change(1)
     sharpe = (4 ** 0.5) * df_total_value['daily_return'].mean() / \
@@ -60,8 +60,8 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
     a2c_sharpe_list = []
     model_use = []
 
-    insample_turbulence = df[(df.datadate < config.turbulence_sample_end_date)
-                             & (df.datadate >= config.turbulence_sample_start_date)]
+    insample_turbulence = df[(df.datadate < config.init_turbulence_sample_end_date)
+                             & (df.datadate >= config.init_turbulence_sample_start_date)]
     insample_turbulence = insample_turbulence.drop_duplicates(subset=['datadate'])
     insample_turbulence_threshold = np.quantile(insample_turbulence.turbulence.values, .90)
 
@@ -100,7 +100,7 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
         ############## Environment Setup starts ##############
         ## training env
         train = data_split(df,
-                           start=config.turbulence_sample_start_date,
+                           start=config.init_turbulence_sample_start_date,
                            end=unique_trade_date[i - rebalance_window - validation_window])
         env_train = DummyVecEnv([lambda: StockEnvTrain(train)])
 
@@ -126,7 +126,7 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
 
         a2c_sharpe_list.append(sharpe_a2c)
 
-        #TODO: Implement PPO and DDPG models]
+        #TODO: Implement PPO and DDPG models
 
     train_end = time.time()
     print(f"Training time: {train_end - train_start} seconds")

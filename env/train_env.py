@@ -4,6 +4,7 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 import matplotlib.pyplot as plt
+from config import config
 
 """ Parameters """
 NUM_STOCK = 30
@@ -47,14 +48,14 @@ class StockEnvTrain(gym.Env):
         if self.is_terminal:
             # Save or print training history and results
             plt.plot(self.asset_memory,'r')
-            plt.savefig('results/account_value_train.png')
+            plt.savefig(f'{config.results_dir}/account_value_train.png')
             plt.close()
             
             end_total_asset = self._get_asset_value_from_state()
             print("Terminal Asset Value: {}".format(end_total_asset))
             
             df_total_value = pd.DataFrame(self.asset_memory)
-            df_total_value.to_csv('results/account_value_train.csv')
+            df_total_value.to_csv(f'{config.results_dir}/account_value_train.csv')
 
             df_total_value.columns = ['account_value']
             df_total_value['daily_return'] = df_total_value.pct_change(1)
@@ -62,7 +63,7 @@ class StockEnvTrain(gym.Env):
             print("Sharpe Ratio: ", sharpe)
 
             df_rewards = pd.DataFrame(self.rewards_memory)
-            df_rewards.to_csv('results/account_rewards_train.csv')
+            df_rewards.to_csv(f'{config.results_dir}/account_rewards_train.csv')
             
             return self.state, self.reward, self.is_terminal,{}
 

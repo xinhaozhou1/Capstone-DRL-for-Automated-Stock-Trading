@@ -6,6 +6,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from env.train_env import StockEnvTrain  # import parent class
+from config import config
 
 """ Parameters """
 NUM_STOCK = 30
@@ -30,39 +31,56 @@ class StockEnvValidation(StockEnvTrain):
         self.is_terminal = self.day >= len(self.df) - 1
         
         if self.is_terminal:
-            return super().step(actions)
-        
-        begin_total_asset = self._get_asset_value_from_state()
+            # return super().step(actions)
+            plt.plot(self.asset_memory, 'r')
+            plt.savefig(f'{config.results_dir}/account_value_validation_{self.iteration}.png')
+            plt.close()
 
-        actions = (actions * NUM_SHARES_PER_TRADE).astype(int)
-        if self.turbulence>=self.turbulence_threshold:
-                actions=np.array([-NUM_SHARES_PER_TRADE]*NUM_STOCK)
-        argsort_actions = np.argsort(actions)
-        sell_index = argsort_actions[:np.where(actions < 0)[0].shape[0]]
-        buy_index = argsort_actions[::-1][:np.where(actions > 0)[0].shape[0]]
+            df_total_value = pd.DataFrame(self.asset_memory)
+            df_total_value.to_csv(f'{config.results_dir}/account_value_validation_{self.iteration}.csv')
 
-        for index in sell_index:
-            self._sell_stock(index, actions[index])
+            end_total_asset = self._get_asset_value_from_state()
+            print("Terminal Asset Value: {}".format(end_total_asset))
 
-        for index in buy_index:
-            self._buy_stock(index, actions[index])
+            df_total_value.columns = ['account_value']
+            df_total_value['daily_return'] = df_total_value.pct_change(1)
+            sharpe = (252 ** 0.5) * df_total_value['daily_return'].mean() / df_total_value['daily_return'].std()
+            print("Sharpe Ratio: ", sharpe)
 
-        cash_balance = self.state[0]
-        stock_shares = self.state[(NUM_STOCK + 1) : (NUM_STOCK * 2 + 1)]
+            return self.state, self.reward, self.is_terminal, {}
 
-        # Obtain next day stock prices and update state
-        self.day += 1
-        self.data = self.df.loc[self.day, :]
-        self.turbulence = self.data['turbulence'].values[0]
-        self.state = np.array([cash_balance] + list(self.data.adjcp[0]) + list(stock_shares) + \
-            list(self.data.macd[0]) + list(self.data.rsi[0]) + list(self.data.cci[0]) + list(self.data.adx[0]))
-        assert self.state.shape == (STATE_SHAPE,)
-        
-        end_total_asset = self._get_asset_value_from_state()
-                    
-        self.reward = end_total_asset - begin_total_asset            
-        self.rewards_memory.append(self.reward)
-        self.asset_memory.append(end_total_asset)
+        else:
+            begin_total_asset = self._get_asset_value_from_state()
+
+            actions = (actions * NUM_SHARES_PER_TRADE).astype(int)
+            if self.turbulence>=self.turbulence_threshold:
+                    actions=np.array([-NUM_SHARES_PER_TRADE]*NUM_STOCK)
+            argsort_actions = np.argsort(actions)
+            sell_index = argsort_actions[:np.where(actions < 0)[0].shape[0]]
+            buy_index = argsort_actions[::-1][:np.where(actions > 0)[0].shape[0]]
+
+            for index in sell_index:
+                self._sell_stock(index, actions[index])
+
+            for index in buy_index:
+                self._buy_stock(index, actions[index])
+
+            cash_balance = self.state[0]
+            stock_shares = self.state[(NUM_STOCK + 1) : (NUM_STOCK * 2 + 1)]
+
+            # Obtain next day stock prices and update state
+            self.day += 1
+            self.data = self.df.loc[self.day, :]
+            self.turbulence = self.data['turbulence'][0]
+            self.state = np.array([cash_balance] + list(self.data.adjcp) + list(stock_shares) + \
+                list(self.data.macd) + list(self.data.rsi) + list(self.data.cci) + list(self.data.adx))
+            assert self.state.shape == (STATE_SHAPE,)
+
+            end_total_asset = self._get_asset_value_from_state()
+
+            self.reward = end_total_asset - begin_total_asset
+            self.rewards_memory.append(self.reward)
+            self.asset_memory.append(end_total_asset)
 
         return self.state, self.reward, self.is_terminal, {}
     
@@ -102,3 +120,6 @@ class StockEnvValidation(StockEnvTrain):
                 self.trades += 1
             else:
                 pass
+
+    def _get_turbulence(self):
+        return self.turbulence
