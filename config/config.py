@@ -18,3 +18,11 @@ dj_stock_ticker = ['AAPL', 'AXP', 'BA', 'CAT', 'CSCO', 'CVX',
 dj_data_path = os.path.join(project_root, "data", f"dow_30_{dj_start_date}_{dj_end_date}.csv")
 
 trained_model_dir = os.path.join(project_root, "model")
+
+# Env parameters
+turbulence_sample_start_date = 20090000
+turbulence_sample_end_date = 20151000
+trade_start_date = 20151001
+trade_end_date = 20200707
+rebalance_window = 63
+validation_window = 63

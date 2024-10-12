@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from train_env import StockEnvTrain  # import parent class
+from env.train_env import StockEnvTrain  # import parent class
 
 """ Parameters """
 NUM_STOCK = 30

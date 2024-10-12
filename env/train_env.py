@@ -27,9 +27,9 @@ class StockEnvTrain(gym.Env):
         self.action_space = spaces.Box(low = -1, high = 1,shape = (NUM_STOCK,))
         self.observation_space = spaces.Box(low = 0, high = np.inf, shape = (STATE_SHAPE,), dtype = np.float32)
         
-        # Initalize state
-        self.state = np.array([INITIAL_ACCOUNT_BALANCE] + list(self.data.adjcp[0]) + [0] * NUM_STOCK + \
-            list(self.data.macd[0]) + list(self.data.rsi[0]) + list(self.data.cci[0]) + list(self.data.adx[0]))
+        # Initialize state
+        self.state = np.array([INITIAL_ACCOUNT_BALANCE] + list(self.data.adjcp) + [0] * NUM_STOCK + \
+            list(self.data.macd) + list(self.data.rsi) + list(self.data.cci) + list(self.data.adx))
         
         assert self.state.shape == (STATE_SHAPE,)
         
@@ -86,8 +86,8 @@ class StockEnvTrain(gym.Env):
             # Obtain next day stock prices and update state
             self.day += 1
             self.data = self.df.loc[self.day, :]
-            self.state = np.array([cash_balance] + list(self.data.adjcp[0]) + list(stock_shares) + \
-                list(self.data.macd[0]) + list(self.data.rsi[0]) + list(self.data.cci[0]) + list(self.data.adx[0]))
+            self.state = np.array([cash_balance] + list(self.data.adjcp) + list(stock_shares) + \
+                list(self.data.macd) + list(self.data.rsi) + list(self.data.cci) + list(self.data.adx))
             assert self.state.shape == (STATE_SHAPE,)
             
             end_total_asset = self._get_asset_value_from_state()
@@ -106,8 +106,8 @@ class StockEnvTrain(gym.Env):
         self.trades = 0
         self.is_terminal = False 
         self.rewards_memory = []
-        self.state = np.array([INITIAL_ACCOUNT_BALANCE] + list(self.data.adjcp[0]) + [0] * NUM_STOCK + \
-            list(self.data.macd[0]) + list(self.data.rsi[0]) + list(self.data.cci[0]) + list(self.data.adx[0]))
+        self.state = np.array([INITIAL_ACCOUNT_BALANCE] + list(self.data.adjcp) + [0] * NUM_STOCK + \
+            list(self.data.macd) + list(self.data.rsi) + list(self.data.cci) + list(self.data.adx))
         assert self.state.shape == (STATE_SHAPE,)
         return self.state
     

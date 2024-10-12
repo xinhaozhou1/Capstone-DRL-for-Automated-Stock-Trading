@@ -9,6 +9,18 @@ import yfinance as yf
 import os
 import matplotlib.pyplot as plt
 
+def data_split(df, start, end):
+    """
+        split the dataset into training or testing using date
+        :param data: (df) pandas dataframe, start, end
+        :return: (df) pandas dataframe
+    """
+    data = df[(df.datadate >= start) & (df.datadate < end)]
+    data = data.sort_values(['datadate', 'tic'], ignore_index=True)
+    # data  = data[final_columns]
+    data.index = data.datadate.factorize()[0]
+    return data
+
 def retrieve_DJ30_data():
     """
     Retrieve DJIA data according to the configuration
@@ -146,6 +158,7 @@ def plot_turbulence_index(data):
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
+
 
 ## For testing purposes
 # if __name__ == "__main__":
