@@ -33,9 +33,9 @@ class StockEnvValidation(StockEnvTrain):
         
         if self.is_terminal:
             # return super().step(actions)
-            plt.plot(self.asset_memory, 'r')
-            plt.savefig(f'{config.results_dir}/account_value_validation_{self.iteration}.png')
-            plt.close()
+            # plt.plot(self.asset_memory, 'r')
+            # plt.savefig(f'{config.results_dir}/account_value_validation_{self.iteration}.png')
+            # plt.close()
 
             df_total_value = pd.DataFrame(self.asset_memory)
             df_total_value.to_csv(f'{config.results_dir}/account_value_validation_{self.iteration}.csv')

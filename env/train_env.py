@@ -145,5 +145,5 @@ class StockEnvTrain(gym.Env):
         return cash_balance + sum(np.array(stock_prices) * np.array(stock_shares))
 
     def _seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
+        self.np_random, seed = seeding.np_random(abs(int(seed)))
         return [seed]
