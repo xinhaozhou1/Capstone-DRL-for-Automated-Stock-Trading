@@ -63,7 +63,7 @@ def DRL_validation(model, test_data, test_env, test_obs) -> None:
         action, _states = model.predict(test_obs)
         test_obs, rewards, dones, info = test_env.step(action)
 
-def DRL_prediction(df, model, name, last_state, iter_num, unique_trade_date, rebalance_window, turbulence_threshold, is_initial):
+def DRL_prediction(df, model, name, last_state, iter_num, unique_trade_date, rebalance_window, turbulence_threshold, is_initial, seed):
     trade_data = data_split(df, 
                             start = unique_trade_date[iter_num - rebalance_window], 
                             end = unique_trade_date[iter_num])
@@ -72,7 +72,8 @@ def DRL_prediction(df, model, name, last_state, iter_num, unique_trade_date, reb
                                                    is_initial = is_initial,
                                                    previous_state = last_state,
                                                    model_name = name,
-                                                   iteration = iter_num)])
+                                                   iteration = iter_num,
+                                                   seed=seed)])
     obs_trade = env_trade.reset()
 
     last_state = []
@@ -95,7 +96,7 @@ def get_validation_sharpe(iteration):
     return sharpe
 
 
-def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_window) -> None:
+def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_window, global_seed=42) -> None:
     """Ensemble Strategy that combines PPO, A2C and DDPG"""
     logging.info("============Start Ensemble Strategy============")
     # for ensemble model, it's necessary to feed the last state
@@ -113,10 +114,14 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
     insample_turbulence_threshold = np.quantile(insample_turbulence.turbulence.values, .90)
 
     train_start = time.time()
+    rng = np.random.default_rng(global_seed)  # Initialize the random generator with a global seed
+    num_iter = (len(unique_trade_date) - (rebalance_window + validation_window)) // rebalance_window + 1
+    seeds = rng.integers(0, 10000, size=num_iter)  # Generate unique seeds for each iterations
     for i in range(rebalance_window + validation_window, len(unique_trade_date), rebalance_window):
         logging.info("============================================")
         logging.info(f"Trade start date: {unique_trade_date[i]}")
-
+        # seed for the current iteration
+        seed = seeds[i]
         # Determine the initial state
         is_initial = False
         if i - rebalance_window - validation_window == 0:
@@ -148,13 +153,13 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
         train = data_split(df,
                            start=config.init_turbulence_sample_start_date,
                            end=unique_trade_date[i - rebalance_window - validation_window])
-        env_train = DummyVecEnv([lambda: StockEnvTrain(train)])
+        env_train = DummyVecEnv([lambda: StockEnvTrain(train, seed=seed)])
 
         ## validation env
         validation = data_split(df, 
                                 start=unique_trade_date[i - rebalance_window - validation_window],
                                 end=unique_trade_date[i - rebalance_window])
-        env_val = DummyVecEnv([lambda: StockEnvValidation(validation, turbulence_threshold=turbulence_threshold, iteration=i)])
+        env_val = DummyVecEnv([lambda: StockEnvValidation(validation, turbulence_threshold=turbulence_threshold, iteration=i, seed=seed)])
         obs_val = env_val.reset()
         ############## Environment Setup ends ##############
 
@@ -210,7 +215,8 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
                                              unique_trade_date = unique_trade_date,
                                              rebalance_window = rebalance_window,
                                              turbulence_threshold = turbulence_threshold,
-                                             is_initial = is_initial)
+                                             is_initial = is_initial,
+                                             seed=seed)
         assert len(last_state_ensemble) != 0
         ############## Trading ends ##############
 

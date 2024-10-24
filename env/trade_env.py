@@ -14,8 +14,8 @@ TRANSACTION_FEE_PERCENT = 0.001
 STATE_SHAPE = 1 + NUM_STOCK * 6
 
 class StockEnvTrade(StockEnvValidation):
-    def __init__(self, df, day=0, turbulence_threshold=140, is_initial=True, previous_state=[], model_name='', iteration=''):
-        super().__init__(df, day, turbulence_threshold=turbulence_threshold, iteration=iteration)
+    def __init__(self, df, day=0, turbulence_threshold=140, is_initial=True, previous_state=[], model_name='', iteration='', seed=42):
+        super().__init__(df, day, turbulence_threshold=turbulence_threshold, iteration=iteration, seed=seed)
         self.is_initial = is_initial
         self.previous_state = np.array(previous_state).reshape(-1)
         assert self.state.shape == (STATE_SHAPE,)

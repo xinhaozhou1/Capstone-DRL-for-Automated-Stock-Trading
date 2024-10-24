@@ -21,8 +21,8 @@ TURBULENCE_THRESHOLD = 140
 class StockEnvValidation(StockEnvTrain):
     """A stock trading validation environment inheriting from StockEnvTrain"""
 
-    def __init__(self, df, day=0, turbulence_threshold=TURBULENCE_THRESHOLD, iteration=''):
-        super().__init__(df, day)
+    def __init__(self, df, day=0, turbulence_threshold=TURBULENCE_THRESHOLD, iteration='', seed=42):
+        super().__init__(df, day, seed)
         self.turbulence_threshold = turbulence_threshold
         self.turbulence = 0
         self.iteration = iteration

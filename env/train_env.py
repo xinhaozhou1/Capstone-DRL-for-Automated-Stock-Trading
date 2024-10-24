@@ -19,7 +19,7 @@ class StockEnvTrain(gym.Env):
     """ A stock trading environment for OpenAI gym """
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, df, day = 0):
+    def __init__(self, df, day = 0, seed=42):
         self.day = day
         self.df = self._sort_and_group_data(df)
         self.data = self.df.loc[self.day, :]
@@ -41,7 +41,7 @@ class StockEnvTrain(gym.Env):
         self.asset_memory = [INITIAL_ACCOUNT_BALANCE]
         self.rewards_memory = []
         self.trades = 0
-        self._seed()
+        self._seed(seed=seed)
 
     def step(self, actions):
         self.is_terminal = self.day >= len(self.df) - 1
