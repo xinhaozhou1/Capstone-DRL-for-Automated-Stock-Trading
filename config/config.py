@@ -1,6 +1,7 @@
 # Used to store the configuration of the project
 import datetime
 import os
+import logging
 
 # data
 # Training data settings: Dow Jones 30 (DJ30)
@@ -28,8 +29,16 @@ dj_data_path = os.path.join(project_root, "data", f"dow_30_{dj_start_date}_{dj_e
 now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 trained_model_dir = f"trained_models/{now}"
 trained_model_dir = os.path.join(project_root, trained_model_dir)
-os.makedirs(trained_model_dir)
 
 results_dir = f"results/{now}"
 results_dir = os.path.join(project_root, results_dir)
-os.makedirs(results_dir)
+
+os.makedirs(trained_model_dir, exist_ok=True)
+os.makedirs(results_dir, exist_ok=True)
+
+log_file = os.path.join(results_dir, "running_log.log")
+logging.basicConfig(
+    filename = log_file,
+    level = logging.INFO,
+    format = '%(asctime)s - %(levelname)s - %(message)s'
+)

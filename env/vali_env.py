@@ -4,6 +4,7 @@ from gym import spaces
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import logging
 
 from env.train_env import StockEnvTrain  # import parent class
 from config import config
@@ -40,12 +41,12 @@ class StockEnvValidation(StockEnvTrain):
             df_total_value.to_csv(f'{config.results_dir}/account_value_validation_{self.iteration}.csv')
 
             end_total_asset = self._get_asset_value_from_state()
-            print("Terminal Asset Value: {}".format(end_total_asset))
+            logging.info("Terminal Asset Value: {}".format(end_total_asset))
 
             df_total_value.columns = ['account_value']
             df_total_value['daily_return'] = df_total_value.pct_change(1)
             sharpe = (252 ** 0.5) * df_total_value['daily_return'].mean() / df_total_value['daily_return'].std()
-            print("Sharpe Ratio: ", sharpe)
+            logging.info(f"Sharpe Ratio: {sharpe}")
 
             return self.state, self.reward, self.is_terminal, {}
 
@@ -53,8 +54,8 @@ class StockEnvValidation(StockEnvTrain):
             begin_total_asset = self._get_asset_value_from_state()
 
             actions = (actions * NUM_SHARES_PER_TRADE).astype(int)
-            if self.turbulence>=self.turbulence_threshold:
-                    actions=np.array([-NUM_SHARES_PER_TRADE]*NUM_STOCK)
+            if self.turbulence >= self.turbulence_threshold:
+                    actions = np.array([-NUM_SHARES_PER_TRADE] * NUM_STOCK)
             argsort_actions = np.argsort(actions)
             sell_index = argsort_actions[:np.where(actions < 0)[0].shape[0]]
             buy_index = argsort_actions[::-1][:np.where(actions > 0)[0].shape[0]]
