@@ -19,7 +19,7 @@ class StockEnvTrade(StockEnvValidation):
         self.is_initial = is_initial
         self.previous_state = np.array(previous_state).reshape(-1)
         assert self.state.shape == (STATE_SHAPE,)
-        self.model_name = model_name        
+        self.model_name = model_name
 
     def step(self, actions):
         # Check if the environment is terminal
@@ -71,7 +71,7 @@ class StockEnvTrade(StockEnvValidation):
             stock_shares = self.state[(NUM_STOCK + 1) : (NUM_STOCK * 2 + 1)]
 
             self.day += 1
-            self.data = self.df.loc[self.day,:]         
+            self.data = self.df.loc[self.day,:]
             self.turbulence = self.data['turbulence'][0]
             assert type(self.turbulence) == float
             self.state = np.array([cash_balance] + list(self.data.adjcp) + list(stock_shares) + \
@@ -86,7 +86,7 @@ class StockEnvTrade(StockEnvValidation):
 
         return self.state, self.reward, self.is_terminal, {}
     
-    def reset(self):  
+    def reset(self):
         if self.is_initial:
             self.asset_memory = [INITIAL_ACCOUNT_BALANCE]
             self.day = 0
