@@ -22,7 +22,7 @@ def run_model():
         data.to_csv(preprocessed_path)
 
     # For validation purpose, plot turbulence index
-    plot_turbulence_index(data)
+    # plot_turbulence_index(data)
 
     unique_trade_date = data[(data.datadate > config.trade_start_date)&(data.datadate <= config.trade_end_date)].datadate.unique()
     logging.info(f"Trade date count: {unique_trade_date}")
