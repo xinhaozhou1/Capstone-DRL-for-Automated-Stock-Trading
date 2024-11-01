@@ -26,13 +26,15 @@ class StockEnvTrade(StockEnvValidation):
         self.is_terminal = self.day >= len(self.df) - 1
 
         if self.is_terminal:
+            # print(self.asset_memory)
             # plt.plot(self.asset_memory,'r')
             datadates, account_values = zip(*self.asset_memory)
-            datadates = pd.to_datetime(datadates, format='%Y-%m-%d')
+            datadates = pd.to_datetime(datadates, format='%Y%m%d')
             plt.plot(datadates, account_values, 'r')
             plt.xlabel('Date')
             plt.ylabel('Account Value')
-            plt.title(f'Account Value from {datadates[0]} to {datadates[-1]}')
+            plt.title(f'Account Value from {datadates[0].strftime("%Y-%m-%d")} to {datadates[-1].strftime("%Y-%m-%d")}')
+            plt.xticks(rotation=45)
             plt.savefig(f'{config.results_dir}/account_value_trade_{self.model_name}_{self.iteration}.png')
             plt.close()
 
