@@ -81,9 +81,9 @@ def DRL_prediction(df, model, name, last_state, iter_num, unique_trade_date, reb
     while not done:
         action, _states = model.predict(obs_trade)
         obs_trade, rewards, done, info = env_trade.step(action)
-    last_state = obs_trade
+    last_state = info[0]['terminal_observation']
 
-    df_last_state = pd.DataFrame({'last_state': list(last_state)}, index=[0])
+    df_last_state = pd.DataFrame({'last_state': list(last_state)}, index = list(range(len(last_state))))
     df_last_state.to_csv(f'{config.results_dir}/last_state_{name}_{trade_data_end_date}.csv', index=False)
     return last_state
 
