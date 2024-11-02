@@ -26,27 +26,39 @@ class StockEnvTrade(StockEnvValidation):
         self.is_terminal = self.day >= len(self.df) - 1
 
         if self.is_terminal:
-            plt.plot(self.asset_memory,'r')
+            # print(self.asset_memory)
+            # plt.plot(self.asset_memory,'r')
+            datadates, account_values = zip(*self.asset_memory)
+            datadates = pd.to_datetime(datadates, format='%Y%m%d')
+            plt.plot(datadates, account_values, 'r')
+            plt.xlabel('Date')
+            plt.ylabel('Account Value')
+            plt.title(f'Account Value from {datadates[0].strftime("%Y-%m-%d")} to {datadates[-1].strftime("%Y-%m-%d")}')
+            plt.xticks(rotation=45)
             plt.savefig(f'{config.results_dir}/account_value_trade_{self.model_name}_{self.iteration}.png')
             plt.close()
 
-            df_total_value = pd.DataFrame(self.asset_memory)
-            df_total_value.to_csv(f'{config.results_dir}/account_value_trade_{self.model_name}_{self.iteration}.csv')
+            df_total_value = pd.DataFrame({
+                    'datadate': [entry[0] for entry in self.asset_memory],
+                    'account_value': [entry[1] for entry in self.asset_memory]
+                })
+            df_total_value.to_csv(f'{config.results_dir}/account_value_trade_{self.model_name}_{self.iteration}.csv', index=False)
             
             end_total_asset = self._get_asset_value_from_state()
-            logging.info("Previous Total Asset: {}".format(self.asset_memory[0]))
+            logging.info("Previous Total Asset: {}".format(self.asset_memory[0][1]))
             logging.info("Terminal Asset Value: {}".format(end_total_asset))
-            logging.info("Total Reward: {}".format(end_total_asset - self.asset_memory[0]))
+            logging.info("Total Reward: {}".format(end_total_asset - self.asset_memory[0][1]))
             logging.info(f"Total Cost: {self.cost}")
             logging.info(f"Total Trades: {self.trades}")
 
-            df_total_value.columns = ['account_value']
-            df_total_value['daily_return'] = df_total_value.pct_change(1)
+            df_total_value['daily_return'] = df_total_value['account_value'].pct_change(1)
             sharpe = (252 ** 0.5) * df_total_value['daily_return'].mean() / df_total_value['daily_return'].std()
             logging.info(f"Sharpe: {sharpe}")
             
-            df_rewards = pd.DataFrame(self.rewards_memory)
-            df_rewards.to_csv(f'{config.results_dir}/account_rewards_trade_{self.model_name}_{self.iteration}.csv')
+            df_rewards = pd.DataFrame({
+                'datadate': [entry[0] for entry in self.rewards_memory],
+                'reward': [entry[1] for entry in self.rewards_memory]})
+            df_rewards.to_csv(f'{config.results_dir}/account_rewards_trade_{self.model_name}_{self.iteration}.csv', index=False)
             
             return self.state, self.reward, self.is_terminal, {}
 
@@ -72,6 +84,7 @@ class StockEnvTrade(StockEnvValidation):
 
             self.day += 1
             self.data = self.df.loc[self.day,:]
+            timestamp = self.data['datadate']
             self.turbulence = self.data['turbulence'][0]
             assert type(self.turbulence) == float
             self.state = np.array([cash_balance] + list(self.data.adjcp) + list(stock_shares) + \
@@ -81,14 +94,14 @@ class StockEnvTrade(StockEnvValidation):
             end_total_asset = self._get_asset_value_from_state()
 
             self.reward = end_total_asset - begin_total_asset            
-            self.rewards_memory.append(self.reward)
-            self.asset_memory.append(end_total_asset)
+            self.rewards_memory.append((timestamp, self.reward))
+            self.asset_memory.append((timestamp, end_total_asset))
 
         return self.state, self.reward, self.is_terminal, {}
     
     def reset(self):
         if self.is_initial:
-            self.asset_memory = [INITIAL_ACCOUNT_BALANCE]
+            self.asset_memory = [(self.df.iloc[0]['datadate'], INITIAL_ACCOUNT_BALANCE)]
             self.day = 0
             self.data = self.df.loc[self.day,:]
             self.turbulence = 0
@@ -101,9 +114,9 @@ class StockEnvTrade(StockEnvValidation):
             assert self.state.shape == (STATE_SHAPE,)
         else:
             previous_total_asset = self._get_asset_value_from_prev_state()
-            self.asset_memory = [previous_total_asset]
             self.day = 0
             self.data = self.df.loc[self.day,:]
+            self.asset_memory = [(self.data['datadate'], previous_total_asset)]
             self.turbulence = 0
             self.cost = 0
             self.trades = 0

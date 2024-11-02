@@ -37,14 +37,16 @@ class StockEnvValidation(StockEnvTrain):
             # plt.savefig(f'{config.results_dir}/account_value_validation_{self.iteration}.png')
             # plt.close()
 
-            df_total_value = pd.DataFrame(self.asset_memory)
-            df_total_value.to_csv(f'{config.results_dir}/account_value_validation_{self.iteration}.csv')
+            df_total_value = pd.DataFrame({
+                    'datadate': [entry[0] for entry in self.asset_memory],
+                    'account_value': [entry[1] for entry in self.asset_memory]
+                })
+            df_total_value.to_csv(f'{config.results_dir}/account_value_validation_{self.iteration}.csv', index=False)
 
             end_total_asset = self._get_asset_value_from_state()
             logging.info("Terminal Asset Value: {}".format(end_total_asset))
 
-            df_total_value.columns = ['account_value']
-            df_total_value['daily_return'] = df_total_value.pct_change(1)
+            df_total_value['daily_return'] = df_total_value['account_value'].pct_change(1)
             sharpe = (252 ** 0.5) * df_total_value['daily_return'].mean() / df_total_value['daily_return'].std()
             logging.info(f"Sharpe Ratio: {sharpe}")
 
@@ -72,6 +74,7 @@ class StockEnvValidation(StockEnvTrain):
             # Obtain next day stock prices and update state
             self.day += 1
             self.data = self.df.loc[self.day, :]
+            timestamp = self.data['datadate']
             self.turbulence = self.data['turbulence'][0]
             self.state = np.array([cash_balance] + list(self.data.adjcp) + list(stock_shares) + \
                 list(self.data.macd) + list(self.data.rsi) + list(self.data.cci) + list(self.data.adx))
@@ -80,8 +83,8 @@ class StockEnvValidation(StockEnvTrain):
             end_total_asset = self._get_asset_value_from_state()
 
             self.reward = end_total_asset - begin_total_asset
-            self.rewards_memory.append(self.reward)
-            self.asset_memory.append(end_total_asset)
+            self.rewards_memory.append((timestamp, self.reward))
+            self.asset_memory.append((timestamp, end_total_asset))
 
         return self.state, self.reward, self.is_terminal, {}
     
