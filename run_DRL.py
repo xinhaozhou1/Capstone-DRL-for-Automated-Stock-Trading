@@ -31,7 +31,8 @@ def run_model():
         run_ensemble_strategy(df = data,
                             unique_trade_date = unique_trade_date,
                             rebalance_window = config.rebalance_window,
-                            validation_window = config.validation_window)
+                            validation_window = config.validation_window,
+                            global_seed = 42)
     except Exception as e:
         logging.error("Error type: %s", type(e).__name__)
         logging.error("Error message: %s", str(e))
