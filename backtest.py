@@ -36,20 +36,27 @@ def backtest_strat(df):
     return ts
 
 
-def train_and_test_agent(df, env_train, agent_class, model_name, timestep, train_start_date, train_end_date, trade_start_date, trade_end_date):
-    # Train the agent
-    logging.info(f"======Individual Agent Training from {train_start_date} to {train_end_date}========")
+def train_and_test_agent(df, env_train, agent_class, model_name, timestep, train_start_date, train_end_date, trade_start_date, trade_end_date, is_initial, last_state):
+    # Retrieve the trained agent of the corresponding period
+    logging.info(f"======Individual Agent Trained Retrieved from {train_start_date} to {train_end_date}========")
     logging.info(f"Training model: {model_name}")
-    agent = agent_class('MlpPolicy', env_train, verbose=0)
-    agent.learn(total_timesteps=timestep)
+    # agent = agent_class('MlpPolicy', env_train, verbose=0)
+    # agent.learn(total_timesteps=timestep)
+
+    model_path = f"{config.trained_model_dir}/{model_name}_{trade_end_date}.zip"
+    if os.path.exists(model_path):
+        logging.info(f"Loading existing model: {model_name} from {model_path}")
+        agent = agent_class.load(model_path, env=env_train)
+    else:
+        raise FileNotFoundError(f"Model {model_name} for period ending {trade_end_date} not found.")
 
     # Prepare trade environment
     logging.info(f"======{model_name} Individual Agent Trading from {trade_start_date} to {trade_end_date}======")
     trade = data_split(df, start=trade_start_date, end=trade_end_date)
     env_trade = DummyVecEnv([lambda: StockEnvTrade(trade,
                                                    turbulence_threshold=1e6,
-                                                   is_initial=True,
-                                                   previous_state=[],
+                                                   is_initial=is_initial,
+                                                   previous_state=last_state,
                                                    model_name=model_name,
                                                    iteration=trade_end_date,
                                                    seed=42)])
@@ -58,7 +65,7 @@ def train_and_test_agent(df, env_train, agent_class, model_name, timestep, train
     last_state = []
 
     while not done:
-        action, _states = agent.predict(obs_trade)
+        action, _states = agent.predict(obs_trade, deterministic = True)
         obs_trade, rewards, done, info = env_trade.step(action)
     last_state = info[0]['terminal_observation']
 
@@ -71,15 +78,16 @@ def train_and_test_agent(df, env_train, agent_class, model_name, timestep, train
     df_model['Date'] = pd.to_datetime(df_model['datadate'], format='%Y%m%d')
     df_model['daily_return'] = df_model['account_value'].pct_change(1)
     df_model['name'] =  model_name
-    return df_model
+    return df_model, last_state
 
 
-def plot_performance(df_strats, df_account_value, df_dji):
+def plot_performance(df_agents, df_account_value, df_dji):
     plt.figure(figsize=(10, 5))
     plt.plot(df_account_value['datadate'], df_account_value['cumret'], linestyle='-', color='r', label = 'Ensemble')
     plt.plot(df_dji['Date'], df_dji['cumret'], linestyle='-', color='b', label='DJI')
-    for i in df_strats:
-        plt.plot(i['Date'], i['cumret'], linestyle='-', label=i['name'].unique()[0])
+    for name, group in df_agents.groupby('name'):
+        plt.plot(group['Date'], group['cumret'], linestyle='-', label=name)
+
     plt.xlabel('Date')
     plt.ylabel('Account Value')
     plt.title('Account Value Over Time')
@@ -118,23 +126,39 @@ def backtest():
     dji_data.reset_index(inplace=True)
 
     # Retrieve individual agents' performance
-    train_start_date = config.init_turbulence_sample_start_date
-    train_end_date = unique_trade_date[0]
-    trade_start_date = int(start_date.replace('-', ''))
-    trade_end_date = int(end_date.replace('-', ''))
+    logging.info(f"======BackTest Session Starts from {int(start_date.replace('-', ''))} "
+                 f"to {int(end_date.replace('-', ''))}======")
+    agents = []
 
-    train = data_split(df, start=train_start_date, end=train_end_date)
-    env_train = DummyVecEnv([lambda: StockEnvTrain(train)])
+    # a2c = train_and_test_agent(df, env_train, A2C, "A2C", 30000, train_start_date, train_end_date, trade_start_date, trade_end_date)
+    # ddpg = train_and_test_agent(df, env_train, DDPG, "DDPG", 5000, train_start_date, train_end_date, trade_start_date, trade_end_date)
+    # ppo = train_and_test_agent(df, env_train, PPO, "PPO", 80000, train_start_date, train_end_date, trade_start_date,trade_end_date)
+    # agents = [a2c, ddpg, ppo]
 
-    logging.info(f"======BackTest Session Starts from {trade_start_date} to {trade_end_date}======")
-    df_a2c = train_and_test_agent(df, env_train, A2C, "A2C", 30000, train_start_date, train_end_date, trade_start_date, trade_end_date)
-    df_ddpg = train_and_test_agent(df, env_train, DDPG, "DDPG", 5000, train_start_date, train_end_date, trade_start_date, trade_end_date)
-    df_ppo = train_and_test_agent(df, env_train, PPO, "PPO", 80000, train_start_date, train_end_date, trade_start_date,trade_end_date)
-    agents = [df_a2c, df_ddpg, df_ppo]
-    for i in agents:
-        i['cumret'] = (1 + i['daily_return']).cumprod() - 1
-    plot_performance(agents, df_account_value, dji_data)
+    # Implement rolling trading for agents
+    a2c, ddpg, ppo = [pd.DataFrame(), []], [pd.DataFrame(), []], [pd.DataFrame(), []]
+    df_agents = pd.DataFrame()
+    for i in range(config.rebalance_window + config.validation_window, len(unique_trade_date), config.rebalance_window):
+        train_start_date = config.init_turbulence_sample_start_date
+        train_end_date = unique_trade_date[i - config.rebalance_window - config.validation_window]
+        trade_start_date = unique_trade_date[i - config.rebalance_window]
+        trade_end_date = unique_trade_date[i]
+        is_initial = (i - config.rebalance_window - config.validation_window == 0)
+        train = data_split(df, start=train_start_date, end=train_end_date)
+        env_train = DummyVecEnv([lambda: StockEnvTrain(train)])
 
+        a2c = train_and_test_agent(df, env_train, A2C, "A2C_30k_dow", 30000, train_start_date, train_end_date,
+                                      trade_start_date, trade_end_date, is_initial, last_state= a2c[1])
+        ddpg = train_and_test_agent(df, env_train, DDPG, "DDPG_10k_dow", 5000, train_start_date, train_end_date,
+                                       trade_start_date, trade_end_date, is_initial, last_state= ddpg[1])
+        ppo = train_and_test_agent(df, env_train, PPO, "PPO_100k_dow", 80000, train_start_date, train_end_date,
+                                      trade_start_date, trade_end_date, is_initial, last_state= ppo[1])
+        df_agents = pd.concat([df_agents, a2c[0], ddpg[0], ppo[0]], axis=0)
+
+    # Plot the performance of the agents
+    df_agents = df_agents.sort_values(by='Date').reset_index(drop=True)
+    df_agents['cumret'] = df_agents.groupby('name')['daily_return'].apply(lambda x: (1 + x).cumprod() - 1)
+    plot_performance(df_agents, df_account_value, dji_data)
 
     # Compare the two strategies
     df_account_value.rename(columns={'datadate':'Date'}, inplace=True)
