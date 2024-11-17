@@ -129,7 +129,7 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
         logging.info(f"Trading session until date: {trade_data_end_date}")
         
         # seed for the current iteration
-        seed = seeds[seed_iter]
+        seed = abs(int(seeds[seed_iter]))
         # determine the initial state
         is_initial = (i - rebalance_window - validation_window == 0)
 
