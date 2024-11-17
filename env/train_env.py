@@ -26,8 +26,8 @@ class StockEnvTrain(gym.Env):
         self.is_terminal = False
 
         # Define action space and observation space
-        self.action_space = spaces.Box(low = -1, high = 1,shape = (NUM_STOCK,))
-        self.observation_space = spaces.Box(low = 0, high = np.inf, shape = (STATE_SHAPE,), dtype = np.float32)
+        self.action_space = spaces.Box(low = -1, high = 1,shape = (NUM_STOCK,), seed=seed)
+        self.observation_space = spaces.Box(low = 0, high = np.inf, shape = (STATE_SHAPE,), dtype = np.float32, seed=seed)
         
         # Initialize state
         self.state = np.array([INITIAL_ACCOUNT_BALANCE] + list(self.data.adjcp) + [0] * NUM_STOCK + \
@@ -151,4 +151,5 @@ class StockEnvTrain(gym.Env):
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(abs(int(seed)))
+        np.random.seed(seed)
         return [seed]

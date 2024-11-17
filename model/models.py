@@ -21,11 +21,11 @@ from env.train_env import StockEnvTrain
 from env.vali_env import StockEnvValidation
 from env.trade_env import StockEnvTrade
 
-def train_A2C(env_train, model_name, timesteps = 50000):
+def train_A2C(env_train, model_name, timesteps = 50000, seed=42):
     """A2C model"""
 
     start = time.time()
-    model = A2C('MlpPolicy', env_train, verbose = 0)
+    model = A2C('MlpPolicy', env_train, verbose = 0, seed=42)
     model.learn(total_timesteps = timesteps)
     end = time.time()
 
@@ -33,11 +33,11 @@ def train_A2C(env_train, model_name, timesteps = 50000):
     logging.info(f'Training time (A2C): {(end - start) / 60} minutes')
     return model
 
-def train_DDPG(env_train, model_name, timesteps = 50000):
+def train_DDPG(env_train, model_name, timesteps = 50000, seed=42):
     """DDPG model"""
 
     start = time.time()
-    model = DDPG('MlpPolicy', env_train, verbose = 0)
+    model = DDPG('MlpPolicy', env_train, verbose = 0, seed=seed)
     model.learn(total_timesteps = timesteps)
     end = time.time()
 
@@ -45,11 +45,11 @@ def train_DDPG(env_train, model_name, timesteps = 50000):
     logging.info(f'Training time (DDPG): {(end - start) / 60} minutes')
     return model
 
-def train_PPO(env_train, model_name, timesteps = 50000):
+def train_PPO(env_train, model_name, timesteps = 50000, seed=42):
     """PPO model"""
 
     start = time.time()
-    model = PPO('MlpPolicy', env_train, verbose = 0)
+    model = PPO('MlpPolicy', env_train, verbose = 0, seed=seed)
     model.learn(total_timesteps = timesteps)
     end = time.time()
 
@@ -60,7 +60,7 @@ def train_PPO(env_train, model_name, timesteps = 50000):
 def DRL_validation(model, test_data, test_env, test_obs) -> None:
     ###validation process###
     for i in range(len(test_data.index.unique())):
-        action, _states = model.predict(test_obs)
+        action, _states = model.predict(test_obs, deterministic = True)
         test_obs, rewards, dones, info = test_env.step(action)
 
 def DRL_prediction(df, model, name, last_state, iter_num, unique_trade_date, rebalance_window, turbulence_threshold, is_initial, seed):
@@ -79,7 +79,7 @@ def DRL_prediction(df, model, name, last_state, iter_num, unique_trade_date, reb
     last_state = []
     done = False
     while not done:
-        action, _states = model.predict(obs_trade)
+        action, _states = model.predict(obs_trade, deterministic = True)
         obs_trade, rewards, done, info = env_trade.step(action)
     last_state = info[0]['terminal_observation']
 
@@ -171,21 +171,21 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
         logging.info(f"======Model training from 20090000 to {train_data_end_date}")
         
         logging.info("======A2C Training========")
-        model_a2c = train_A2C(env_train, model_name = f"A2C_30k_dow_{trade_data_end_date}", timesteps = 30000)
+        model_a2c = train_A2C(env_train, model_name = f"A2C_30k_dow_{trade_data_end_date}", timesteps = 30000, seed=seed)
         logging.info(f"======A2C Validation from {train_data_end_date} to {val_data_end_date}")
         DRL_validation(model = model_a2c, test_data = validation, test_env = env_val, test_obs = obs_val)
         sharpe_a2c = get_validation_sharpe(trade_data_end_date)
         logging.info(f"A2C Sharpe Ratio: {sharpe_a2c}")
 
         logging.info("======PPO Training========")
-        model_ppo = train_PPO(env_train, model_name = f"PPO_100k_dow_{trade_data_end_date}", timesteps = 80000)
+        model_ppo = train_PPO(env_train, model_name = f"PPO_100k_dow_{trade_data_end_date}", timesteps = 80000, seed=seed)
         logging.info(f"======PPO Validation from {train_data_end_date} to {val_data_end_date}")
         DRL_validation(model = model_ppo, test_data = validation, test_env = env_val, test_obs = obs_val)
         sharpe_ppo = get_validation_sharpe(trade_data_end_date)
         logging.info(f"PPO Sharpe Ratio: {sharpe_ppo}")
 
         logging.info("======DDPG Training========")
-        model_ddpg = train_DDPG(env_train, model_name = f"DDPG_10k_dow_{trade_data_end_date}", timesteps = 5000)
+        model_ddpg = train_DDPG(env_train, model_name = f"DDPG_10k_dow_{trade_data_end_date}", timesteps = 5000, seed=seed)
         logging.info(f"======DDPG Validation from {train_data_end_date} to {val_data_end_date}")
         DRL_validation(model = model_ddpg, test_data = validation, test_env = env_val, test_obs = obs_val)
         sharpe_ddpg = get_validation_sharpe(trade_data_end_date)
