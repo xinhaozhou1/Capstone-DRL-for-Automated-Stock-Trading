@@ -158,6 +158,7 @@ def plot_turbulence_index(data):
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
+    plt.savefig(f'{config.results_dir}/turbulence_index.png')
 
 
 ## For testing purposes

@@ -10,7 +10,7 @@ from model.models import *
 import logging
 import traceback
 
-def run_model():
+def run_model(use_turbulence=True):
     # read and preprocess data
     preprocessed_path = f"done_data_{config.dj_start_date}_{config.dj_end_date}.csv"
     if os.path.exists(preprocessed_path):
@@ -32,7 +32,8 @@ def run_model():
                             unique_trade_date = unique_trade_date,
                             rebalance_window = config.rebalance_window,
                             validation_window = config.validation_window,
-                            global_seed = 42)
+                            global_seed = 42,
+                            use_turbulence=use_turbulence)
     except Exception as e:
         logging.error("Error type: %s", type(e).__name__)
         logging.error("Error message: %s", str(e))

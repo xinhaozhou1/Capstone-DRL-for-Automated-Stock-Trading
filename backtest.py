@@ -23,7 +23,7 @@ config.dj_start_date = '2009-01-01'
 config.dj_end_date = '2024-10-31'
 config.init_turbulence_sample_start_date = 20090000
 config.init_turbulence_sample_end_date = 20191000
-config.trade_start_date = 20160101 #20200101
+config.trade_start_date = 20160101
 config.trade_end_date = 20241031
 
 def backtest_strat(df):

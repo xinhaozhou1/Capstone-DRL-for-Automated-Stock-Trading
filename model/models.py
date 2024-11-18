@@ -155,7 +155,7 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
             # if the mean of the historical data is less than the 90% quantile of insample turbulence data
             # then we tune up the turbulence_threshold, meaning we lower the risk
             turbulence_threshold = np.quantile(insample_turbulence.turbulence.values, 1)
-        
+
         if not use_turbulence:
             turbulence_threshold = 1e6
         logging.info(f"Turbulence Threshold: {turbulence_threshold}")
