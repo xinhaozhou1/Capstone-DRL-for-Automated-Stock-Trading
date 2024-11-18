@@ -112,6 +112,7 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
                              & (df.datadate >= config.init_turbulence_sample_start_date)]
     insample_turbulence = insample_turbulence.drop_duplicates(subset=['datadate'])
     insample_turbulence_threshold = np.quantile(insample_turbulence.turbulence.values, .90)
+    # insample_turbulence_threshold = 1e6
 
     train_start = time.time()
     rng = np.random.default_rng(global_seed)
@@ -151,6 +152,9 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
             # if the mean of the historical data is less than the 90% quantile of insample turbulence data
             # then we tune up the turbulence_threshold, meaning we lower the risk
             turbulence_threshold = np.quantile(insample_turbulence.turbulence.values, 1)
+
+        # # Debug purpose: test performance without turbulence effect
+        # turbulence_threshold = 1e6
         logging.info(f"Turbulence Threshold: {turbulence_threshold}")
 
         ############## Environment Setup starts ##############
