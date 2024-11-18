@@ -96,7 +96,8 @@ def get_validation_sharpe(iteration):
     return sharpe
 
 
-def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_window, global_seed=42) -> None:
+def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_window, 
+                          global_seed=42, use_turbulence=True) -> None:
     """Ensemble Strategy that combines PPO, A2C and DDPG"""
     logging.info("============Start Ensemble Strategy============")
     # for ensemble model, it's necessary to feed the last state
@@ -111,7 +112,10 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
     insample_turbulence = df[(df.datadate < config.init_turbulence_sample_end_date)
                              & (df.datadate >= config.init_turbulence_sample_start_date)]
     insample_turbulence = insample_turbulence.drop_duplicates(subset=['datadate'])
-    insample_turbulence_threshold = np.quantile(insample_turbulence.turbulence.values, .90)
+    if use_turbulence:
+        insample_turbulence_threshold = np.quantile(insample_turbulence.turbulence.values, .90)
+    else:
+        insample_turbulence_threshold = 1e6
 
     train_start = time.time()
     rng = np.random.default_rng(global_seed)
@@ -151,6 +155,9 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
             # if the mean of the historical data is less than the 90% quantile of insample turbulence data
             # then we tune up the turbulence_threshold, meaning we lower the risk
             turbulence_threshold = np.quantile(insample_turbulence.turbulence.values, 1)
+        
+        if not use_turbulence:
+            turbulence_threshold = 1e6
         logging.info(f"Turbulence Threshold: {turbulence_threshold}")
 
         ############## Environment Setup starts ##############

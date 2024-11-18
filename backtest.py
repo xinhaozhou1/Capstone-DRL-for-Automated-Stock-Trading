@@ -23,7 +23,7 @@ config.dj_start_date = '2009-01-01'
 config.dj_end_date = '2024-10-31'
 config.init_turbulence_sample_start_date = 20090000
 config.init_turbulence_sample_end_date = 20191000
-config.trade_start_date = 20200101
+config.trade_start_date = 20160101 #20200101
 config.trade_end_date = 20241031
 
 def backtest_strat(df):
@@ -98,8 +98,8 @@ def plot_performance(df_agents, df_account_value, df_dji):
     plt.savefig(f'{config.results_dir}/backtest.png')
     plt.close()
 
-def backtest():
-    run_model()
+def backtest(use_turbulence=True):
+    run_model(use_turbulence=use_turbulence)
     df = pd.read_csv(f"done_data_{config.dj_start_date}_{config.dj_end_date}.csv")
     unique_trade_date = df[(df.datadate > config.trade_start_date)
                            & (df.datadate <= config.trade_end_date)].datadate.unique()
@@ -177,4 +177,4 @@ def backtest():
             plt.close(fig)
 
 if __name__ == "__main__":
-    backtest()
+    backtest(use_turbulence=True)
