@@ -1,0 +1,6 @@
+2024-11-17_19-49-46 --> original reward function, with turbulence
+2024-11-17_18-00-32 --> original reward function, without turbulence
+2024-11-20_23-14-34 --> cumulative reward function 1, with turbulence
+2024-11-20_20-30-42 --> cumulative reward function 1, without turbulence
+2024-11-21_23-38-14 --> cumulative reward function 2, without turbulence
+2024-11-22_02-12-51 --> cumulative reward function 2, with turbulence
