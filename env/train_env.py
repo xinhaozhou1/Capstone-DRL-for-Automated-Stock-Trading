@@ -88,8 +88,22 @@ class StockEnvTrain(gym.Env):
             assert self.state.shape == (STATE_SHAPE,)
             
             end_total_asset = self._get_asset_value_from_state()
-                        
-            self.reward = end_total_asset - begin_total_asset            
+            
+            # Original reward
+            # self.reward = end_total_asset - begin_total_asset
+            
+            # Cumulative reward 1
+            # current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
+            # cumulative_trade_return = (end_total_asset / INITIAL_ACCOUNT_BALANCE) ** (1/self.day) - 1
+            # decay_rate = 0.2
+            # self.reward = (1-decay_rate) * current_trade_return + decay_rate * cumulative_trade_return
+
+            # Cumulative reward 2
+            current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
+            prev_reward = self.rewards_memory[-1][1] if self.rewards_memory else 0
+            decay_rate = 0.2
+            self.reward = current_trade_return + decay_rate * prev_reward
+            
             self.rewards_memory.append((timestamp, self.reward))
             self.asset_memory.append((timestamp, end_total_asset))
 
