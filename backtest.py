@@ -166,15 +166,15 @@ def backtest(use_turbulence=True):
     dow_strat = backtest_strat(dji_data)
 
     # Generate a backtest tear sheet
-    pdf_path = f"{config.results_dir}/backtest_tear_sheet.pdf"
-    with PdfPages(pdf_path) as pdf:
-        with pf.plotting.plotting_context(font_scale=1.1):
-            pf.create_full_tear_sheet(returns=ensemble_strat, benchmark_rets=dow_strat, set_context=False)
+    # pdf_path = f"{config.results_dir}/backtest_tear_sheet.pdf"
+    # with PdfPages(pdf_path) as pdf:
+    #     with pf.plotting.plotting_context(font_scale=1.1):
+    #         pf.create_full_tear_sheet(returns=ensemble_strat, benchmark_rets=dow_strat, set_context=False)
 
-        for fig_num in plt.get_fignums():
-            fig = plt.figure(fig_num)
-            pdf.savefig(fig)
-            plt.close(fig)
+    #     for fig_num in plt.get_fignums():
+    #         fig = plt.figure(fig_num)
+    #         pdf.savefig(fig)
+    #         plt.close(fig)
 
 if __name__ == "__main__":
-    backtest(use_turbulence=True)
+    backtest(use_turbulence=False)

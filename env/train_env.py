@@ -88,21 +88,8 @@ class StockEnvTrain(gym.Env):
             assert self.state.shape == (STATE_SHAPE,)
             
             end_total_asset = self._get_asset_value_from_state()
-            
-            # Original reward
-            # self.reward = end_total_asset - begin_total_asset
-            
-            # Cumulative reward 1
-            # current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
-            # cumulative_trade_return = (end_total_asset / INITIAL_ACCOUNT_BALANCE) ** (1/self.day) - 1
-            # decay_rate = 0.2
-            # self.reward = (1-decay_rate) * current_trade_return + decay_rate * cumulative_trade_return
 
-            # Cumulative reward 2
-            current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
-            prev_reward = self.rewards_memory[-1][1] if self.rewards_memory else 0
-            decay_rate = 0.2
-            self.reward = current_trade_return + decay_rate * prev_reward
+            self.reward = self.reward_function(begin_total_asset, end_total_asset, reward_type=2, decay_rate=0.2)
             
             self.rewards_memory.append((timestamp, self.reward))
             self.asset_memory.append((timestamp, end_total_asset))
@@ -167,3 +154,18 @@ class StockEnvTrain(gym.Env):
         self.np_random, seed = seeding.np_random(abs(int(seed)))
         np.random.seed(seed)
         return [seed]
+    
+    def reward_function(self, begin_total_asset, end_total_asset, reward_type=2, decay_rate=0.2):
+        if reward_type == 0:
+            # Original reward
+            return end_total_asset - begin_total_asset
+        elif reward_type == 1:
+            # Cumulative reward 1
+            current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
+            cumulative_trade_return = (end_total_asset / INITIAL_ACCOUNT_BALANCE) ** (1/self.day) - 1
+            return (1-decay_rate) * current_trade_return + decay_rate * cumulative_trade_return
+        elif reward_type == 2:
+            # Cumulative reward 2
+            current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
+            prev_reward = self.rewards_memory[-1][1] if self.rewards_memory else 0
+            return current_trade_return + decay_rate * prev_reward

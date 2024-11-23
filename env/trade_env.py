@@ -73,6 +73,8 @@ class StockEnvTrade(StockEnvValidation):
             sell_index = argsort_actions[:np.where(actions < 0)[0].shape[0]]
             buy_index = argsort_actions[::-1][:np.where(actions > 0)[0].shape[0]]
 
+            freeze_state = self._freeze_state()
+
             for index in sell_index:
                 self._sell_stock(index, actions[index])
 
@@ -93,24 +95,25 @@ class StockEnvTrade(StockEnvValidation):
             
             end_total_asset = self._get_asset_value_from_state()
 
-            # Original reward
-            # self.reward = end_total_asset - begin_total_asset
-
-            # Cumulative reward 1
-            # current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
-            # previous_total_asset = self.asset_memory[0][1]
-            # cumulative_trade_return = (end_total_asset / previous_total_asset) ** (1/self.day) - 1
-            # decay_rate = 0.2
-            # self.reward = (1-decay_rate) * current_trade_return + decay_rate * cumulative_trade_return
-
-            # Cumulative reward 2
-            current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
-            prev_reward = self.rewards_memory[-1][1] if self.rewards_memory else 0
-            decay_rate = 0.2
-            self.reward = current_trade_return + decay_rate * prev_reward
-
+            self.reward = self.reward_function(begin_total_asset, end_total_asset, reward_type=2, decay_rate=0.2)
             self.rewards_memory.append((timestamp, self.reward))
+
+            current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
+            self.returns_history.append(current_trade_return)
+
+            if self.stop_trade:
+                self.state = freeze_state
+                end_total_asset = self._get_asset_value_from_state()
+            
             self.asset_memory.append((timestamp, end_total_asset))
+
+            window_cumu_return = self._get_cumulative_returns(window=3)
+            if window_cumu_return < -0.02 and not self.stop_trade:
+                logging.info(f"Trade frozen at cumulative return = {window_cumu_return}")
+                self.stop_trade = True
+            elif window_cumu_return > 0.01 and self.stop_trade:
+                logging.info(f"Trading resumed at cumulative return = {window_cumu_return}")
+                self.stop_trade = False
 
         return self.state, self.reward, self.is_terminal, {}
     
@@ -126,6 +129,8 @@ class StockEnvTrade(StockEnvValidation):
             self.rewards_memory = []
             self.state = np.array([INITIAL_ACCOUNT_BALANCE] + list(self.data.adjcp) + [0] * NUM_STOCK + \
                                   list(self.data.macd) + list(self.data.rsi) + list(self.data.cci) + list(self.data.adx))
+            self.stop_trade = False
+            self.returns_history = []
             assert self.state.shape == (STATE_SHAPE,)
         else:
             previous_total_asset = self._get_asset_value_from_prev_state()
@@ -143,6 +148,8 @@ class StockEnvTrade(StockEnvValidation):
 
             self.state = np.array([prev_cash_balance] + list(self.data.adjcp) + list(prev_stock_shares) + \
                 list(self.data.macd) + list(self.data.rsi) + list(self.data.cci) + list(self.data.adx))
+            self.stop_trade = False
+            self.returns_history = []
             assert self.state.shape == (STATE_SHAPE,)
         return self.state
 
@@ -154,3 +161,40 @@ class StockEnvTrade(StockEnvValidation):
     
     def render(self, mode = 'human', close = False):
         return self.state
+    
+    def reward_function(self, begin_total_asset, end_total_asset, reward_type=2, decay_rate=0.2):
+        if reward_type == 0:
+            # Original reward
+            return end_total_asset - begin_total_asset
+        elif reward_type == 1:
+            # Cumulative reward 1
+            current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
+            previous_total_asset = self.asset_memory[0][1]
+            cumulative_trade_return = (end_total_asset / previous_total_asset) ** (1/self.day) - 1
+            return (1-decay_rate) * current_trade_return + decay_rate * cumulative_trade_return
+        elif reward_type == 2:
+            # Cumulative reward 2
+            current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
+            prev_reward = self.rewards_memory[-1][1] if self.rewards_memory else 0
+            return current_trade_return + decay_rate * prev_reward
+        
+    def _get_cumulative_returns(self, window=5):
+        returns_list = self.returns_history[-window:]
+        cumulative_return = 1
+        for r in returns_list:
+            cumulative_return *= (1+r)
+        return cumulative_return ** (1/len(returns_list)) - 1
+    
+    def _freeze_state(self):
+        freeze_state = self.state.copy()
+        if self.stop_trade:
+            for i in range(NUM_STOCK):
+                curr_stock_share = freeze_state[1 + NUM_STOCK + i]
+                if curr_stock_share > 0:
+                    stock_price = freeze_state[1 + i]
+                    num_share_to_sell = curr_stock_share
+                    # Update cash balance
+                    freeze_state[0] += stock_price * num_share_to_sell * (1 - TRANSACTION_FEE_PERCENT)
+                    # Update number of shares
+                    freeze_state[1 + NUM_STOCK + i] = 0
+        return freeze_state
