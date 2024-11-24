@@ -73,7 +73,7 @@ class StockEnvTrade(StockEnvValidation):
             sell_index = argsort_actions[:np.where(actions < 0)[0].shape[0]]
             buy_index = argsort_actions[::-1][:np.where(actions > 0)[0].shape[0]]
 
-            freeze_state = self._freeze_state()
+            # freeze_state = self._freeze_state()
 
             for index in sell_index:
                 self._sell_stock(index, actions[index])
@@ -98,22 +98,22 @@ class StockEnvTrade(StockEnvValidation):
             self.reward = self.reward_function(begin_total_asset, end_total_asset, reward_type=2, decay_rate=0.2)
             self.rewards_memory.append((timestamp, self.reward))
 
-            current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
-            self.returns_history.append(current_trade_return)
+            # current_trade_return = (end_total_asset - begin_total_asset) / begin_total_asset
+            # self.returns_history.append(current_trade_return)
 
-            if self.stop_trade:
-                self.state = freeze_state
-                end_total_asset = self._get_asset_value_from_state()
+            # if self.stop_trade:
+            #     self.state = freeze_state
+            #     end_total_asset = self._get_asset_value_from_state()
             
             self.asset_memory.append((timestamp, end_total_asset))
 
-            window_cumu_return = self._get_cumulative_returns(window=3)
-            if window_cumu_return < -0.02 and not self.stop_trade:
-                logging.info(f"Trade frozen at cumulative return = {window_cumu_return}")
-                self.stop_trade = True
-            elif window_cumu_return > 0.01 and self.stop_trade:
-                logging.info(f"Trading resumed at cumulative return = {window_cumu_return}")
-                self.stop_trade = False
+            # window_cumu_return = self._get_cumulative_returns(window=3)
+            # if window_cumu_return < -0.02 and not self.stop_trade:
+            #     logging.info(f"Trade frozen at cumulative return = {window_cumu_return}")
+            #     self.stop_trade = True
+            # elif window_cumu_return > 0.01 and self.stop_trade:
+            #     logging.info(f"Trading resumed at cumulative return = {window_cumu_return}")
+            #     self.stop_trade = False
 
         return self.state, self.reward, self.is_terminal, {}
     
