@@ -10,7 +10,7 @@ import logging
 
 # Import models from stable baselines
 from stable_baselines3.common.vec_env import DummyVecEnv
-from stable_baselines3 import A2C, DDPG, PPO
+from stable_baselines3 import A2C, DDPG, PPO, TD3, SAC
 
 from config import config
 from preprocessing.preprocessors import *
@@ -57,6 +57,30 @@ def train_PPO(env_train, model_name, timesteps = 50000, seed=42):
     logging.info(f'Training time (PPO): {(end - start) / 60} minutes')
     return model
 
+def train_TD3(env_train, model_name, timesteps = 50000, seed=42):
+    """TD3 model"""
+
+    start = time.time()
+    model = TD3('MlpPolicy', env_train, verbose = 0, seed=seed)
+    model.learn(total_timesteps = timesteps)
+    end = time.time()
+
+    model.save(f"{config.trained_model_dir}/{model_name}")
+    logging.info(f'Training time (TD3): {(end - start) / 60} minutes')
+    return model
+
+def train_SAC(env_train, model_name, timesteps = 50000, seed=42):
+    """SAC model"""
+
+    start = time.time()
+    model = SAC('MlpPolicy', env_train, verbose = 0, seed=seed)
+    model.learn(total_timesteps = timesteps)
+    end = time.time()
+
+    model.save(f"{config.trained_model_dir}/{model_name}")
+    logging.info(f'Training time (SAC): {(end - start) / 60} minutes')
+    return model
+
 def DRL_validation(model, test_data, test_env, test_obs) -> None:
     ###validation process###
     for i in range(len(test_data.index.unique())):
@@ -98,7 +122,7 @@ def get_validation_sharpe(iteration):
 
 def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_window, 
                           global_seed=42, use_turbulence=True) -> None:
-    """Ensemble Strategy that combines PPO, A2C and DDPG"""
+    """Ensemble Strategy that combines PPO, A2C, DDPG, TD3 and SAC"""
     logging.info("============Start Ensemble Strategy============")
     # for ensemble model, it's necessary to feed the last state
     # of the previous model to the current model as the initial state
@@ -107,6 +131,8 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
     ppo_sharpe_list = []
     ddpg_sharpe_list = []
     a2c_sharpe_list = []
+    td3_sharpe_list = []
+    sac_sharpe_list = []
     model_use = []
 
     insample_turbulence = df[(df.datadate < config.init_turbulence_sample_end_date)
@@ -198,20 +224,42 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
         sharpe_ddpg = get_validation_sharpe(trade_data_end_date)
         logging.info(f"DDPG Sharpe Ratio: {sharpe_ddpg}")
 
+        logging.info("======TD3 Training========")
+        model_td3 = train_TD3(env_train, model_name = f"TD3_10k_dow_{trade_data_end_date}", timesteps = 30000, seed=seed)
+        logging.info(f"======TD3 Validation from {train_data_end_date} to {val_data_end_date}")
+        DRL_validation(model = model_td3, test_data = validation, test_env = env_val, test_obs = obs_val)
+        sharpe_td3 = get_validation_sharpe(trade_data_end_date)
+        logging.info(f"TD3 Sharpe Ratio: {sharpe_td3}")
+
+        logging.info("======SAC Training========")
+        model_sac = train_SAC(env_train, model_name = f"SAC_10k_dow_{trade_data_end_date}", timesteps = 30000, seed=seed)
+        logging.info(f"======SAC Validation from {train_data_end_date} to {val_data_end_date}")
+        DRL_validation(model = model_sac, test_data = validation, test_env = env_val, test_obs = obs_val)
+        sharpe_sac = get_validation_sharpe(trade_data_end_date)
+        logging.info(f"SAC Sharpe Ratio: {sharpe_sac}")
+
         a2c_sharpe_list.append(sharpe_a2c)
         ppo_sharpe_list.append(sharpe_ppo)
         ddpg_sharpe_list.append(sharpe_ddpg)
+        td3_sharpe_list.append(sharpe_td3)
+        sac_sharpe_list.append(sharpe_sac)
 
-        max_model_sharpe = np.max([sharpe_a2c, sharpe_ddpg, sharpe_ppo])
+        max_model_sharpe = np.max([sharpe_a2c, sharpe_ddpg, sharpe_ppo, sharpe_td3, sharpe_sac])
         if max_model_sharpe == sharpe_ppo:
             model_ensemble = model_ppo
             model_use.append('PPO')
         elif max_model_sharpe == sharpe_a2c:
             model_ensemble = model_a2c
             model_use.append('A2C')
-        else:
+        elif max_model_sharpe == sharpe_ddpg:
             model_ensemble = model_ddpg
             model_use.append('DDPG')
+        elif max_model_sharpe == sharpe_td3:
+            model_ensemble = model_td3
+            model_use.append('TD3')
+        else:
+            model_ensemble = model_sac
+            model_use.append('SAC')
 
         ############## Training and Validation ends ##############
         ############## Trading starts ##############

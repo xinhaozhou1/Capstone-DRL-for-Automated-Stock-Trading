@@ -20,6 +20,8 @@ class StockEnvTrade(StockEnvValidation):
         self.previous_state = np.array(previous_state).reshape(-1)
         assert self.state.shape == (STATE_SHAPE,)
         self.model_name = model_name
+        self.stop_trade = False
+        self.returns_history = []
 
     def step(self, actions):
         # Check if the environment is terminal

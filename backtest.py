@@ -1,5 +1,5 @@
 import pandas as pd
-from stable_baselines3 import A2C, DDPG, PPO
+from stable_baselines3 import A2C, DDPG, PPO, TD3, SAC
 import yfinance as yf
 
 import pyfolio as pf
@@ -136,7 +136,7 @@ def backtest(use_turbulence=True):
     # agents = [a2c, ddpg, ppo]
 
     # Implement rolling trading for agents
-    a2c, ddpg, ppo = [pd.DataFrame(), []], [pd.DataFrame(), []], [pd.DataFrame(), []]
+    a2c, ddpg, ppo, td3, sac = [pd.DataFrame(), []], [pd.DataFrame(), []], [pd.DataFrame(), []], [pd.DataFrame(), []], [pd.DataFrame(), []]
     df_agents = pd.DataFrame()
     for i in range(config.rebalance_window + config.validation_window, len(unique_trade_date), config.rebalance_window):
         train_start_date = config.init_turbulence_sample_start_date
@@ -153,7 +153,11 @@ def backtest(use_turbulence=True):
                                        trade_start_date, trade_end_date, is_initial, last_state= ddpg[1])
         ppo = train_and_test_agent(df, env_train, PPO, "PPO_100k_dow", 80000, train_start_date, train_end_date,
                                       trade_start_date, trade_end_date, is_initial, last_state= ppo[1])
-        df_agents = pd.concat([df_agents, a2c[0], ddpg[0], ppo[0]], axis=0)
+        td3 = train_and_test_agent(df, env_train, TD3, "TD3_10k_dow", 30000, train_start_date, train_end_date,
+                                       trade_start_date, trade_end_date, is_initial, last_state= td3[1])
+        sac = train_and_test_agent(df, env_train, SAC, "SAC_10k_dow", 30000, train_start_date, train_end_date,
+                                       trade_start_date, trade_end_date, is_initial, last_state= sac[1])
+        df_agents = pd.concat([df_agents, a2c[0], ddpg[0], ppo[0], td3[0], sac[0]], axis=0)
 
     # Plot the performance of the agents
     df_agents = df_agents.sort_values(by='Date').reset_index(drop=True)
