@@ -225,14 +225,14 @@ def run_ensemble_strategy(df, unique_trade_date, rebalance_window, validation_wi
         logging.info(f"DDPG Sharpe Ratio: {sharpe_ddpg}")
 
         logging.info("======TD3 Training========")
-        model_td3 = train_TD3(env_train, model_name = f"TD3_10k_dow_{trade_data_end_date}", timesteps = 30000, seed=seed)
+        model_td3 = train_TD3(env_train, model_name = f"TD3_10k_dow_{trade_data_end_date}", timesteps = 10000, seed=seed)
         logging.info(f"======TD3 Validation from {train_data_end_date} to {val_data_end_date}")
         DRL_validation(model = model_td3, test_data = validation, test_env = env_val, test_obs = obs_val)
         sharpe_td3 = get_validation_sharpe(trade_data_end_date)
         logging.info(f"TD3 Sharpe Ratio: {sharpe_td3}")
 
         logging.info("======SAC Training========")
-        model_sac = train_SAC(env_train, model_name = f"SAC_10k_dow_{trade_data_end_date}", timesteps = 30000, seed=seed)
+        model_sac = train_SAC(env_train, model_name = f"SAC_10k_dow_{trade_data_end_date}", timesteps = 10000, seed=seed)
         logging.info(f"======SAC Validation from {train_data_end_date} to {val_data_end_date}")
         DRL_validation(model = model_sac, test_data = validation, test_env = env_val, test_obs = obs_val)
         sharpe_sac = get_validation_sharpe(trade_data_end_date)

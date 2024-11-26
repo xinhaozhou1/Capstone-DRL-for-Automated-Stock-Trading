@@ -22,6 +22,7 @@ class StockEnvTrade(StockEnvValidation):
         self.model_name = model_name
         self.stop_trade = False
         self.returns_history = []
+        self.max_account_value = self.asset_memory[-1][1]
 
     def step(self, actions):
         # Check if the environment is terminal
@@ -108,13 +109,28 @@ class StockEnvTrade(StockEnvValidation):
             #     end_total_asset = self._get_asset_value_from_state()
             
             self.asset_memory.append((timestamp, end_total_asset))
+            # if end_total_asset > self.max_account_value:
+            #     self.max_account_value = end_total_asset
 
             # window_cumu_return = self._get_cumulative_returns(window=3)
-            # if window_cumu_return < -0.02 and not self.stop_trade:
-            #     logging.info(f"Trade frozen at cumulative return = {window_cumu_return}")
+            
+            # value-based stop loss
+            # stop_threshold, resume_threshold = 0.05, 0.01
+            # if end_total_asset <= self.max_account_value * (1 - stop_threshold) and not self.stop_trade:
             #     self.stop_trade = True
-            # elif window_cumu_return > 0.01 and self.stop_trade:
-            #     logging.info(f"Trading resumed at cumulative return = {window_cumu_return}")
+            #     logging.info(f"Trade frozen at {timestamp} with drop from {self.max_account_value} to {end_total_asset}")
+            #     self.max_account_value = end_total_asset
+            # elif window_cumu_return >= resume_threshold and self.stop_trade:
+            #     logging.info(f"Trading resumed at {timestamp} with cumulative return = {window_cumu_return}")
+            #     self.stop_trade = False
+
+            # return-based stop loss
+            # stop_threshold, resume_threshold = 0.02, 0.01
+            # if window_cumu_return < -stop_threshold and not self.stop_trade:
+            #     logging.info(f"Trade frozen at {timestamp} with cumulative return = {window_cumu_return}")
+            #     self.stop_trade = True
+            # elif window_cumu_return > resume_threshold and self.stop_trade:
+            #     logging.info(f"Trading resumed at {timestamp} with cumulative return = {window_cumu_return}")
             #     self.stop_trade = False
 
         return self.state, self.reward, self.is_terminal, {}
@@ -133,6 +149,7 @@ class StockEnvTrade(StockEnvValidation):
                                   list(self.data.macd) + list(self.data.rsi) + list(self.data.cci) + list(self.data.adx))
             self.stop_trade = False
             self.returns_history = []
+            self.max_account_value = self.asset_memory[-1][1]
             assert self.state.shape == (STATE_SHAPE,)
         else:
             previous_total_asset = self._get_asset_value_from_prev_state()

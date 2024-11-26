@@ -6,3 +6,4 @@
 2024-11-22_02-12-51 --> cumulative reward function 2, with turbulence
 2024-11-23_17-13-33 --> cumulative reward function 2, without turbulence, with return-based stop loss
 2024-11-23_20-53-16 --> 5 models ensemble, cumulative reward function 2, without turbulence, without stop loss
+2024-11-25_20-26-42 --> 5 models ensemble, cumulative reward function 2, without turbulence, with value-based stop loss
