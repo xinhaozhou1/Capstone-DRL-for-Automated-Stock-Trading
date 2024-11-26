@@ -21,6 +21,13 @@ trade_end_date = 20200707
 rebalance_window = 63
 validation_window = 63
 
+# Model parameters
+PPO_ts = 80000
+A2C_ts = 30000
+DDPG_ts = 5000
+SAC_ts = 5000
+TD3_ts = 5000
+
 # Directories
 config_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(config_dir)
