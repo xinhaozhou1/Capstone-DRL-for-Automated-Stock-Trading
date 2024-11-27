@@ -76,7 +76,6 @@ def train_and_test_agent(df, env_train, agent_class, model_name, timestep, train
     # Load account value for the strategy
     df_model = pd.read_csv(f'{config.results_dir}/account_value_trade_{model_name}_{trade_end_date}.csv')
     df_model['Date'] = pd.to_datetime(df_model['datadate'], format='%Y%m%d')
-    df_model['daily_return'] = df_model['account_value'].pct_change(1)
     df_model['name'] =  model_name
     return df_model, last_state
 
@@ -161,6 +160,7 @@ def backtest(use_turbulence=True):
 
     # Plot the performance of the agents
     df_agents = df_agents.sort_values(by='Date').reset_index(drop=True)
+    df_agents['daily_return'] = df_agents.groupby('name')['account_value'].pct_change(1)
     df_agents['cumret'] = df_agents.groupby('name')['daily_return'].apply(lambda x: (1 + x).cumprod() - 1)
     plot_performance(df_agents, df_account_value, dji_data)
 
@@ -169,7 +169,7 @@ def backtest(use_turbulence=True):
     ensemble_strat = backtest_strat(df_account_value)
     dow_strat = backtest_strat(dji_data)
 
-    # Generate a backtest tear sheet
+    ## Generate a backtest tear sheet
     # pdf_path = f"{config.results_dir}/backtest_tear_sheet.pdf"
     # with PdfPages(pdf_path) as pdf:
     #     with pf.plotting.plotting_context(font_scale=1.1):

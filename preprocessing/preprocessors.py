@@ -96,7 +96,7 @@ def add_technical_indicator(data: pd.DataFrame) -> pd.DataFrame:
     data['adx'] = adx
     return data
 
-def add_turbulence(data: pd.DataFrame):
+def add_turbulence(data: pd.DataFrame, warm_up_period: int = 504) -> pd.DataFrame:
     """
     add turbulence index for the dataframe
     :param data: (df) pandas dataframe
@@ -133,6 +133,13 @@ def add_turbulence(data: pd.DataFrame):
 
     turbulence_index = pd.DataFrame({'datadate': df_price_pivot.index,
                                      'turbulence': turbulence_index})
+
+    turbulence_index['roll_mean'] = turbulence_index['turbulence'].rolling(window=config.turbulence_window).mean()
+    turbulence_index['roll_std'] = turbulence_index['turbulence'].rolling(window=config.turbulence_window).std()
+    turbulence_index['turbulence'] = (turbulence_index['turbulence'] - turbulence_index['roll_mean']) / turbulence_index['roll_std']
+
+    turbulence_index['turbulence'] = turbulence_index['turbulence'].fillna(0)
+    turbulence_index.loc[turbulence_index.index < warm_up_period, 'turbulence'] = 0
 
     df = df.merge(turbulence_index, on='datadate')
     df = df.sort_values(['datadate', 'tic']).reset_index(drop=True)
